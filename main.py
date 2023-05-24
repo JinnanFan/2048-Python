@@ -11,7 +11,7 @@ scoreBoard.grid(row=0,column=0, columnspan=4)
 gameBoard = Frame(root, bg='red', width=400, height=400)
 gameBoard.grid(row=1,column=0)
 
-game = Game(gameBoard)
+game = Game(gameBoard, root)
 
 root.bind("<Up>", game.up)
 root.bind("<Down>", game.down)

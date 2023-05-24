@@ -1,10 +1,13 @@
 #!/usr/bin/env python
 from tkinter import Frame, Label
 import random
+import time
 
 
 class Game:
-    def __init__(self, gameFrame):
+    def __init__(self, gameFrame, window):
+        self.window = window
+        self.gameFrame = gameFrame
         self.gameOver = False
         self.score = 0
         self.create_grid(gameFrame)
@@ -16,6 +19,7 @@ class Game:
         self.update_gridLabel()
 
     def create_grid(self, gameFrame):
+        self.oldGridNumber = [[None for _ in range(4)] for _ in range(4)]
         self.gridNumber = [[None for _ in range(4)] for _ in range(4)]
         self.grid = []
 
@@ -36,8 +40,30 @@ class Game:
             for j in range(4):
                 if self.gridNumber[i][j]:
                     self.grid[i][j]["label"].configure(text=self.gridNumber[i][j])
+
+ 
                 else:
                     self.grid[i][j]["label"].configure(text="")
+        self.animate_labels()
+
+        # print('old', oldGridNumber)
+
+    def animate_labels(self):
+        for i in range(4):
+            for j in range(4):
+                if self.oldGridNumber[i][j] != self.gridNumber[i][j]:
+                    print('--------------------------')
+                    
+                    self.grid[i][j]["label"].configure(fg = 'blue')
+                    self.oldGridNumber[i][j] = self.gridNumber[i][j]
+        self.gameFrame.update()
+        time.sleep(0.5)
+        
+        for i in range(4):
+            for j in range(4):
+                self.grid[i][j]["label"].configure(fg = 'orange')
+
+        
 
     def update_score(self, score):
         self.score += score
@@ -120,7 +146,7 @@ class Game:
             for j in range(4):
                 if self.gridNumber[i][j]:
                     k = i
-                    while not self.gridNumber[k - 1][j] and k > 0:
+                    while self.gridNumber[k - 1][j] is None and k > 0:
                         k -= 1
                     if k != i:
                         self.gridNumber[k][j] = self.gridNumber[i][j]
