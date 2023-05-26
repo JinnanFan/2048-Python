@@ -1,17 +1,19 @@
-from game import Game
-from tkinter import *
+import tkinter as tk
 
-root = Tk()
+from game import Game
+from settings import GRID_WIDTH,COLORS
+
+root = tk.Tk()
 root.configure(bg='black')
 root.title("2048")
 
-scoreBoard = Frame(root, bg='green', width=100, height=100)
-scoreBoard.grid(row=0,column=0, columnspan=4)
+# scoreBoard = tk.Frame(root, bg='green', width=100, height=100)
+# scoreBoard.pack()
 
-gameBoard = Frame(root, bg='red', width=400, height=400)
-gameBoard.grid(row=1,column=0)
+gameCanvas = tk.Canvas(root, bg=COLORS[0], width=GRID_WIDTH, height=GRID_WIDTH)
+gameCanvas.pack(anchor="center", expand=True)
 
-game = Game(gameBoard, root)
+game = Game(gameCanvas, root)
 
 root.bind("<Up>", game.up)
 root.bind("<Down>", game.down)

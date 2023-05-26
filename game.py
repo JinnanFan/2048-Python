@@ -1,69 +1,72 @@
 #!/usr/bin/env python
-from tkinter import Frame, Label
+from tkinter import ttk
 import random
 import time
+from settings import (
+    GRID_SIZE,
+    TILE_WIDTH,
+    START_X,
+    START_Y,
+    TILE_DISTANCE,
+    COLORS
+)
 
 
-class Game:
-    def __init__(self, gameFrame, window):
+class Game(ttk.Frame):
+    def __init__(self, board, window):
         self.window = window
-        self.gameFrame = gameFrame
-        self.gameOver = False
+        self.board = board
+        self.tileValues = [[0 for _ in range(GRID_SIZE)] for _ in range(GRID_SIZE)]
+        # self.tileValues = [[2**(j+4*i) for j in range(1,GRID_SIZE+1)] for i in range(GRID_SIZE)]
+        self.boardChanged = False
         self.score = 0
-        self.create_grid(gameFrame)
+        self.gameOver = False
         self.start_game()
 
     def start_game(self):
+        self.create_grid()
         self.add_new_tile()
         self.add_new_tile()
-        self.update_gridLabel()
+        self.update_tiles()
 
-    def create_grid(self, gameFrame):
-        self.oldGridNumber = [[None for _ in range(4)] for _ in range(4)]
-        self.gridNumber = [[None for _ in range(4)] for _ in range(4)]
-        self.grid = []
+    def create_grid(self):
+        for i in range(GRID_SIZE):
+            for j in range(GRID_SIZE):
+                self.create_tile(
+                    START_X + TILE_DISTANCE * i, START_Y + TILE_DISTANCE * j
+                )
 
-        for i in range(4):
-            row = []
-            for j in range(4):
-                cellFrame = Frame(gameFrame, width=100, height=100)
-                cellFrame.grid(row=i, column=j, padx=5, pady=5)
-                cellLabel = Label(gameFrame, fg="orange", font=("Helvetica", 18))
-                cellLabel.grid(row=i, column=j)
-                row.append({"frame": cellFrame, "label": cellLabel})
-            self.grid.append(row)
+    def create_tile(self, x, y, value=0):
+        tileColor = COLORS[value] if int(value) <= 2048 else COLORS['other']
+        tileText = value if value > 0 else None
+        self.board.create_rectangle(
+            (x, y),
+            (x + TILE_WIDTH, y + TILE_WIDTH),
+            fill=tileColor,
+            outline=COLORS['text']
+        )
+        self.board.create_text(
+            (x + TILE_WIDTH // 2, y + TILE_WIDTH // 2),
+            anchor="center",
+            font=("Clear Sans", 50-5*len(str(value)), 'bold'),
+            fill=COLORS['text'],
+            text=tileText,
+        )
 
-        print(self.gridNumber)
+    def update_tiles(self):
+        for i in range(GRID_SIZE):
+            for j in range(GRID_SIZE):
+                if self.tileValues[i][j]>0:
+                    self.create_tile(
+                        START_X + TILE_DISTANCE * j,
+                        START_Y + TILE_DISTANCE * i,
+                        value=self.tileValues[i][j],
+                    )
 
-    def update_gridLabel(self):
-        for i in range(4):
-            for j in range(4):
-                if self.gridNumber[i][j]:
-                    self.grid[i][j]["label"].configure(text=self.gridNumber[i][j])
-
- 
                 else:
-                    self.grid[i][j]["label"].configure(text="")
-        self.animate_labels()
-
-        # print('old', oldGridNumber)
-
-    def animate_labels(self):
-        for i in range(4):
-            for j in range(4):
-                if self.oldGridNumber[i][j] != self.gridNumber[i][j]:
-                    print('--------------------------')
-                    
-                    self.grid[i][j]["label"].configure(fg = 'blue')
-                    self.oldGridNumber[i][j] = self.gridNumber[i][j]
-        self.gameFrame.update()
-        time.sleep(0.5)
-        
-        for i in range(4):
-            for j in range(4):
-                self.grid[i][j]["label"].configure(fg = 'orange')
-
-        
+                    self.create_tile(
+                        START_X + TILE_DISTANCE * j, START_Y + TILE_DISTANCE * i
+                    )
 
     def update_score(self, score):
         self.score += score
@@ -78,15 +81,15 @@ class Game:
 
     def horizontalMoveAvailable(self):
         for i in range(3):
-            for j in range(4):
-                if self.gridNumber[i][j] == self.gridNumber[i + 1][j]:
+            for j in range(GRID_SIZE):
+                if self.tileValues[i][j] == self.tileValues[i + 1][j]:
                     return True
         return False
 
     def verticalMoveAvailable(self):
-        for i in range(4):
+        for i in range(GRID_SIZE):
             for j in range(3):
-                if self.gridNumber[i][j] == self.gridNumber[i][j + 1]:
+                if self.tileValues[i][j] == self.tileValues[i][j + 1]:
                     return True
         return False
 
@@ -95,23 +98,23 @@ class Game:
             while True:
                 row = random.randint(0, 3)
                 col = random.randint(0, 3)
-                if not self.gridNumber[row][col]:
+                if self.tileValues[row][col] == 0:
                     break
 
             if random.randint(0, 9) == 0:
-                self.gridNumber[row][col] = 4
+                self.tileValues[row][col] = 4
             else:
-                self.gridNumber[row][col] = 2
-
-            print("add new tile: ", self.gridNumber)
+                self.tileValues[row][col] = 2
 
     def emptyCellAvailable(self):
-        for i in range(4):
-            for j in range(4):
-                if not self.gridNumber[i][j]:
-                    return True
-        return False
+        # for i in range(GRID_SIZE):
+        #     for j in range(GRID_SIZE):
+        #         if not self.tileValues[i][j]:
+        #             return True
+        # return False
+        return any(0 in row for row in self.tileValues)
 
+    # User interaction function for moving a tile
     def up(self, event):
         self.move_tile_up_and_merge()
         self.after_move()
@@ -136,61 +139,65 @@ class Game:
         self.transpose_left()
         self.after_move()
 
-    def after_move(self):
-        self.add_new_tile()
-        self.update_gridLabel()
-        self.game_over()
-
-    def move_tile_up(self):
-        for i in range(1, 4):
-            for j in range(4):
-                if self.gridNumber[i][j]:
-                    k = i
-                    while self.gridNumber[k - 1][j] is None and k > 0:
-                        k -= 1
-                    if k != i:
-                        self.gridNumber[k][j] = self.gridNumber[i][j]
-                        self.gridNumber[i][j] = None
-
-        print("move up: ", self.gridNumber)
-
     def move_tile_up_and_merge(self):
         self.move_tile_up()
         self.merge_tile_up()
         self.move_tile_up()
 
-    def transpose_left(self):
-        for i in range(4):
-            for j in range(i, 4):
-                self.gridNumber[i][j], self.gridNumber[j][i] = (
-                    self.gridNumber[j][i],
-                    self.gridNumber[i][j],
-                )
-
-        print("transpose_left: ", self.gridNumber)
-
-    def upside_down(self):
-        for i in range(2):
-            for j in range(4):
-                self.gridNumber[i][j], self.gridNumber[3 - i][j] = (
-                    self.gridNumber[3 - i][j],
-                    self.gridNumber[i][j],
-                )
+    def move_tile_up(self):
+        for i in range(1, GRID_SIZE):
+            for j in range(GRID_SIZE):
+                if self.tileValues[i][j] > 0:
+                    fillingPosition = i
+                    while (
+                        self.tileValues[fillingPosition - 1][j] == 0
+                        and fillingPosition > 0
+                    ):
+                        fillingPosition -= 1
+                    if fillingPosition != i:
+                        self.tileValues[fillingPosition][j] = self.tileValues[i][j]
+                        self.tileValues[i][j] = 0
+                        self.boardChanged = True
 
     def merge_tile_up(self):
         score = 0
-        for i in range(3):
-            for j in range(4):
+        for i in range(GRID_SIZE-1):
+            for j in range(GRID_SIZE):
                 if (
-                    self.gridNumber[i][j]
-                    and self.gridNumber[i][j] == self.gridNumber[i + 1][j]
+                    self.tileValues[i][j] > 0
+                    and self.tileValues[i][j] == self.tileValues[i + 1][j]
                 ):
-                    self.gridNumber[i][j] *= 2
-                    self.gridNumber[i + 1][j] = None
-                    score += self.gridNumber[i][j]
+                    self.tileValues[i][j] *= 2
+                    self.tileValues[i + 1][j] = 0
+                    self.boardChanged = True
+
+                    score += self.tileValues[i][j]
 
         self.update_score(score)
-        print("merge up: ", self.gridNumber)
+
+    def transpose_left(self):
+        for i in range(GRID_SIZE):
+            for j in range(i, GRID_SIZE):
+                self.tileValues[i][j], self.tileValues[j][i] = (
+                    self.tileValues[j][i],
+                    self.tileValues[i][j],
+                )
+
+    def upside_down(self):
+        for i in range(GRID_SIZE//2):
+            for j in range(GRID_SIZE):
+                self.tileValues[i][j], self.tileValues[3 - i][j] = (
+                    self.tileValues[3 - i][j],
+                    self.tileValues[i][j],
+                )
+
+    def after_move(self):
+        if self.boardChanged:
+            self.add_new_tile()
+
+        self.update_tiles()
+        self.game_over()
+        self.boardChanged = False
 
     def __repr__(self):
-        return self.gridNumber
+        return self.tileValues
